@@ -9,9 +9,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.upplication.s3fs.util.S3Utils;
@@ -27,7 +28,7 @@ public class S3Iterator implements Iterator<Path> {
     private String key;
     private List<S3Path> items = Lists.newArrayList();
     private Set<S3Path> addedVirtualDirectories = Sets.newHashSet();
-    private ObjectListing current;
+    private ListObjectsResponse current;
     private int cursor; // index of next element to return
     private int size;
     private boolean incremental;
@@ -43,6 +44,7 @@ public class S3Iterator implements Iterator<Path> {
     }
 
     public S3Iterator(S3FileStore fileStore, String key, boolean incremental) {
+        // TODO: Convert to ListObjectsV2Request (marker doesn't exist in that api)
         ListObjectsRequest listObjectsRequest = buildRequest(fileStore.name(), key, incremental);
 
         this.fileStore = fileStore;
@@ -61,7 +63,13 @@ public class S3Iterator implements Iterator<Path> {
     @Override
     public S3Path next() {
         if (cursor == size && current.isTruncated()) {
-            this.current = fileSystem.getClient().listNextBatchOfObjects(current);
+            ListObjectsRequest request = ListObjectsRequest.builder()
+                                                   .bucket(fileStore.name())
+                                                   .prefix(key)
+                                                   .marker(current.nextMarker())
+                                                   .build();
+
+            this.current = fileSystem.getClient().listObjects(request);
             loadObjects();
         }
         if (cursor == size)
@@ -85,8 +93,8 @@ public class S3Iterator implements Iterator<Path> {
     }
 
     private void parseObjects() {
-        for (final S3ObjectSummary objectSummary : current.getObjectSummaries()) {
-            final String objectSummaryKey = objectSummary.getKey();
+        for (final S3Object objectSummary : current.contents()) {
+            final String objectSummaryKey = objectSummary.key();
             String[] keyParts = fileSystem.key2Parts(objectSummaryKey);
             addParentPaths(keyParts);
             S3Path path = new S3Path(fileSystem, "/" + fileStore.name(), keyParts);
@@ -103,7 +111,7 @@ public class S3Iterator implements Iterator<Path> {
         List<S3Path> parentPaths = new ArrayList<>();
         while (subParts.length > 0) {
             S3Path path = new S3Path(fileSystem,  "/" + fileStore.name(), subParts);
-            String prefix = current.getPrefix();
+            String prefix = current.prefix();
 
             String parentKey = path.getKey();
             if (prefix.length() > parentKey.length() && prefix.contains(parentKey))
@@ -126,17 +134,17 @@ public class S3Iterator implements Iterator<Path> {
      *
      * @param key      the uri to parse
      * @param listPath List not null list to add
-     * @param current  ObjectListing to walk
+     * @param current  List<S3Object> to walk
      */
-    private void parseObjectListing(String key, List<S3Path> listPath, ObjectListing current) {
-        for (String commonPrefix : current.getCommonPrefixes()) {
-            if (!commonPrefix.equals("/")) {
-                listPath.add(new S3Path(fileSystem,  "/" + fileStore.name(), fileSystem.key2Parts(commonPrefix)));
+    private void parseObjectListing(String key, List<S3Path> listPath, ListObjectsResponse current) {
+        for (CommonPrefix commonPrefix : current.commonPrefixes()) {
+            if (!commonPrefix.prefix().equals("/")) {
+                listPath.add(new S3Path(fileSystem,  "/" + fileStore.name(), fileSystem.key2Parts(commonPrefix.prefix())));
             }
         }
         // TODO: figure our a way to efficiently preprocess commonPrefix basicFileAttributes
-        for (final S3ObjectSummary objectSummary : current.getObjectSummaries()) {
-            final String objectSummaryKey = objectSummary.getKey();
+        for (final S3Object objectSummary : current.contents()) {
+            final String objectSummaryKey = objectSummary.key();
             // we only want the first level
             String immediateDescendantKey = getImmediateDescendant(key, objectSummaryKey);
             if (immediateDescendantKey != null) {
@@ -185,8 +193,14 @@ public class S3Iterator implements Iterator<Path> {
     }
 
     ListObjectsRequest buildRequest(String bucketName, String key, boolean incremental, Integer maxKeys) {
-        if (incremental)
-            return new ListObjectsRequest(bucketName, key, null, null, maxKeys);
-        return new ListObjectsRequest(bucketName, key, key, "/", maxKeys);
+        ListObjectsRequest.Builder builder = ListObjectsRequest.builder();
+        builder.bucket(bucketName)
+               .prefix(key)
+               .maxKeys(maxKeys);
+
+        if (!incremental)
+            builder.marker(key)
+                   .delimiter("/");
+        return builder.build();
     }
 }

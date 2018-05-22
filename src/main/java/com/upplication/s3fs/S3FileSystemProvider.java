@@ -1,11 +1,18 @@
 package com.upplication.s3fs;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.internal.Constants;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectAclRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -151,13 +158,13 @@ public class S3FileSystemProvider extends FileSystemProvider {
                 host = host.substring(0, lastPath);
             }
             if (host.length() == 0) {
-                host = Constants.S3_HOSTNAME;
+                host = "s3.amazonaws.com";
             }
             return authority + "@" + host;
         } else {
             String accessKey = (String) props.get(ACCESS_KEY);
             return (accessKey != null ? accessKey + "@" : "") +
-                    (uri.getHost() != null ? uri.getHost() : Constants.S3_HOSTNAME);
+                    (uri.getHost() != null ? uri.getHost() : "s3.amazonaws.com");
         }
     }
 
@@ -325,15 +332,21 @@ public class S3FileSystemProvider extends FileSystemProvider {
         Preconditions.checkArgument(!key.equals(""), "cannot create InputStream for root directory: %s", path);
 
         try {
-            S3Object object = s3Path.getFileSystem().getClient().getObject(s3Path.getFileStore().name(), key);
-            InputStream res = object.getObjectContent();
+            ResponseInputStream<GetObjectResponse> res = s3Path
+                                                              .getFileSystem()
+                                                              .getClient()
+                                                              .getObject(GetObjectRequest
+                                                                              .builder()
+                                                                              .bucket(s3Path.getFileStore().name())
+                                                                              .key(key)
+                                                                              .build());
 
             if (res == null)
                 throw new IOException(String.format("The specified path is a directory: %s", path));
 
             return res;
-        } catch (AmazonS3Exception e) {
-            if (e.getStatusCode() == 404)
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404)
                 throw new NoSuchFileException(path.toString());
             // otherwise throws a generic IO exception
             throw new IOException(String.format("Cannot access file: %s", path), e);
@@ -367,13 +380,15 @@ public class S3FileSystemProvider extends FileSystemProvider {
         Bucket bucket = s3Path.getFileStore().getBucket();
         String bucketName = s3Path.getFileStore().name();
         if (bucket == null) {
-            s3Path.getFileSystem().getClient().createBucket(bucketName);
+            s3Path.getFileSystem().getClient().createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
         }
         // create the object as directory
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(0);
+        PutObjectRequest.Builder builder = PutObjectRequest.builder();
         String directoryKey = s3Path.getKey().endsWith("/") ? s3Path.getKey() : s3Path.getKey() + "/";
-        s3Path.getFileSystem().getClient().putObject(bucketName, directoryKey, new ByteArrayInputStream(new byte[0]), metadata);
+        builder.bucket(bucketName)
+               .key(directoryKey)
+               .contentLength(0L);
+        s3Path.getFileSystem().getClient().putObject(builder.build(), RequestBody.of(new byte[0]));
     }
 
     @Override
@@ -386,9 +401,9 @@ public class S3FileSystemProvider extends FileSystemProvider {
 
         String key = s3Path.getKey();
         String bucketName = s3Path.getFileStore().name();
-        s3Path.getFileSystem().getClient().deleteObject(bucketName, key);
+        s3Path.getFileSystem().getClient().deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
         // we delete the two objects (sometimes exists the key '/' and sometimes not)
-        s3Path.getFileSystem().getClient().deleteObject(bucketName, key + "/");
+        s3Path.getFileSystem().getClient().deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key + "/").build());
     }
 
     @Override
@@ -415,11 +430,12 @@ public class S3FileSystemProvider extends FileSystemProvider {
         String bucketNameTarget = s3Target.getFileStore().name();
         String keyTarget = s3Target.getKey();
         s3Source.getFileSystem()
-                .getClient().copyObject(
-                bucketNameOrigin,
-                keySource,
-                bucketNameTarget,
-                keyTarget);
+                .getClient()
+                .copyObject(CopyObjectRequest.builder()
+                                             .copySource(bucketNameOrigin + "/" + keySource)
+                                             .bucket(bucketNameTarget)
+                                             .key(keyTarget)
+                                             .build());
     }
 
     @Override
@@ -455,15 +471,17 @@ public class S3FileSystemProvider extends FileSystemProvider {
             throw new NoSuchFileException(toString());
         }
 
-        String key = s3Utils.getS3ObjectSummary(s3Path).getKey();
+        String key = s3Utils.getS3ObjectSummary(s3Path).key();
+        String bucket = s3Path.getFileStore().name();
         S3AccessControlList accessControlList =
-                new S3AccessControlList(s3Path.getFileStore().name(), key, s3Path.getFileSystem().getClient().getObjectAcl(s3Path.getFileStore().name(), key), s3Path.getFileStore().getOwner());
+                new S3AccessControlList(bucket, key, s3Path.getFileSystem().getClient().getObjectAcl(GetObjectAclRequest.builder().bucket(bucket).key(key).build()).grants(), s3Path.getFileStore().getOwner());
 
         accessControlList.checkAccess(modes);
     }
 
 
     @Override
+    @SuppressWarnings("unchecked")
     public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
         S3Path s3Path = toS3Path(path);
         if (type == BasicFileAttributeView.class) {
@@ -550,11 +568,11 @@ public class S3FileSystemProvider extends FileSystemProvider {
      * @return S3FileSystem never null
      */
     public S3FileSystem createFileSystem(URI uri, Properties props) {
-        return new S3FileSystem(this, getFileSystemKey(uri, props), getAmazonS3(uri, props), uri.getHost());
+        return new S3FileSystem(this, getFileSystemKey(uri, props), getS3Client(uri, props), uri.getHost());
     }
 
-    protected AmazonS3 getAmazonS3(URI uri, Properties props) {
-        return getAmazonS3Factory(props).getAmazonS3(uri, props);
+    protected S3Client getS3Client(URI uri, Properties props) {
+        return getAmazonS3Factory(props).getS3Client(uri, props);
     }
 
     protected AmazonS3Factory getAmazonS3Factory(Properties props) {

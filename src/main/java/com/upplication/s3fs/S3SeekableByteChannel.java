@@ -2,6 +2,7 @@ package com.upplication.s3fs;
 
 import static java.lang.String.format;
 
+import java.io.ByteArrayInputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,8 +15,13 @@ import java.util.Set;
 
 import org.apache.tika.Tika;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseBytes;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class S3SeekableByteChannel implements SeekableByteChannel {
 
@@ -47,10 +53,9 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
         boolean removeTempFile = true;
         try {
             if (exists) {
-                try (S3Object object = path.getFileSystem()
-                        .getClient()
-                        .getObject(path.getFileStore().getBucket().getName(), key)) {
-                    Files.copy(object.getObjectContent(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+                try (InputStream byteStream = path.getFileSystem().getClient()
+                      .getObject(GetObjectRequest.builder().bucket(path.getFileStore().getBucket().name()).key(key).build())) {
+                   Files.copy(byteStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 }
             }
 
@@ -101,15 +106,19 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
      */
     protected void sync() throws IOException {
         try (InputStream stream = new BufferedInputStream(Files.newInputStream(tempFile))) {
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(Files.size(tempFile));
+            PutObjectRequest.Builder builder = PutObjectRequest.builder();
+            long length = Files.size(tempFile);
+            builder.contentLength(length);
             if (path.getFileName() != null) {
-                metadata.setContentType(new Tika().detect(stream, path.getFileName().toString()));
+                builder.contentType(new Tika().detect(stream, path.getFileName().toString()));
             }
 
-            String bucket = path.getFileStore().name();
-            String key = path.getKey();
-            path.getFileSystem().getClient().putObject(bucket, key, stream, metadata);
+            builder.bucket(path.getFileStore().name());
+            builder.key(path.getKey());
+
+            S3Client client = path.getFileSystem().getClient();
+
+            client.putObject(builder.build(), RequestBody.of(stream, length));
         }
     }
 

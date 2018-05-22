@@ -14,6 +14,7 @@ import java.net.URLDecoder;
 import java.nio.file.*;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.collect.Iterables.*;
 import static java.lang.String.format;
@@ -467,26 +468,6 @@ public class S3Path implements Path {
         else {
             return URI.create(this.uri);
         }
-    }
-
-    /**
-     * Get the url for the s3Path.
-     *
-     * The url represents a Uniform Resource
-     * Locator, a pointer to a "resource" on the World
-     * Wide Web.
-     *
-     * All S3Path has a URL if is absolute
-     *
-     * @see com.amazonaws.services.s3.AmazonS3#getUrl(String, String)
-     * @see S3Path#toUri() for unique resource identifier
-     * @return URL or null if is not absoulte
-     */
-    public URL toURL() {
-        if (!this.isAbsolute())
-            return null;
-
-        return this.getFileSystem().getClient().getUrl(this.fileStore.name(), this.getKey());
     }
 
     @Override

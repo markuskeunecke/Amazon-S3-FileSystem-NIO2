@@ -11,25 +11,25 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Set;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Bucket;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 /**
  * S3FileSystem with a concrete client configured and ready to use.
  *
- * @see AmazonS3 configured by {@link AmazonS3Factory}
+ * @see S3Client configured by {@link AmazonS3Factory}
  */
 public class S3FileSystem extends FileSystem implements Comparable<S3FileSystem> {
 
     private final S3FileSystemProvider provider;
     private final String key;
-    private final AmazonS3 client;
+    private final S3Client client;
     private final String endpoint;
     private int cache;
 
-    public S3FileSystem(S3FileSystemProvider provider, String key, AmazonS3 client, String endpoint) {
+    public S3FileSystem(S3FileSystemProvider provider, String key, S3Client client, String endpoint) {
         this.provider = provider;
         this.key = key;
         this.client = client;
@@ -78,8 +78,8 @@ public class S3FileSystem extends FileSystem implements Comparable<S3FileSystem>
     @Override
     public Iterable<FileStore> getFileStores() {
         ImmutableList.Builder<FileStore> builder = ImmutableList.builder();
-        for (Bucket bucket : client.listBuckets()) {
-            builder.add(new S3FileStore(this, bucket.getName()));
+        for (Bucket bucket : client.listBuckets().buckets()) {
+            builder.add(new S3FileStore(this, bucket.name()));
         }
         return builder.build();
     }
@@ -113,7 +113,7 @@ public class S3FileSystem extends FileSystem implements Comparable<S3FileSystem>
         throw new UnsupportedOperationException();
     }
 
-    public AmazonS3 getClient() {
+    public S3Client getClient() {
         return client;
     }
 

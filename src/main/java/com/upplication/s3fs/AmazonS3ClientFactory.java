@@ -1,15 +1,12 @@
 package com.upplication.s3fs;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.metrics.RequestMetricCollector;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 public class AmazonS3ClientFactory extends AmazonS3Factory {
 
     @Override
-    protected AmazonS3 createAmazonS3(AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfiguration, RequestMetricCollector requestMetricsCollector) {
-        return new AmazonS3Client(credentialsProvider, clientConfiguration, requestMetricsCollector);
+    protected S3Client createS3Client(S3ClientBuilder builder) {
+        return builder.build();
     }
 }

@@ -1,14 +1,14 @@
 package com.upplication.s3fs;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.metrics.RequestMetricCollector;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.S3ClientOptions;
+import software.amazon.awssdk.core.auth.AwsCredentialsProvider;
+import software.amazon.awssdk.core.auth.StaticCredentialsProvider;
+import software.amazon.awssdk.core.auth.AwsCredentials;
+import software.amazon.awssdk.core.auth.DefaultCredentialsProvider;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3AdvancedConfiguration;
+import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration;
+import software.amazon.awssdk.core.config.ClientOverrideConfiguration;
 
 import java.net.URI;
 import java.util.Properties;
@@ -43,101 +43,57 @@ public abstract class AmazonS3Factory {
      * Build a new Amazon S3 instance with the URI and the properties provided
      * @param uri URI mandatory
      * @param props Properties with the credentials and others options
-     * @return AmazonS3
+     * @return S3Client
      */
-    public AmazonS3 getAmazonS3(URI uri, Properties props) {
-        AmazonS3 client = createAmazonS3(getCredentialsProvider(props), getClientConfiguration(props), getRequestMetricsCollector(props));
-        if (uri.getHost() != null) {
-            if (uri.getPort() != -1)
-                client.setEndpoint(uri.getHost() + ':' + uri.getPort());
-            else
-                client.setEndpoint(uri.getHost());
-        }
+    public S3Client getS3Client(URI uri, Properties props) {
+        S3ClientBuilder builder = S3Client.builder();
+        if (uri != null && uri.getHost() != null)
+            builder.endpointOverride(uri);
 
-        client.setS3ClientOptions(getClientOptions(props));
+        builder.credentialsProvider(getCredentialsProvider(props))
+               .httpConfiguration(getHttpConfiguration(props))
+               .advancedConfiguration(getAdvancedConfiguration(props))
+               .overrideConfiguration(getOverrideConfiguration(props));
+               //.region(getRegion(props));
 
-        return client;
+        return createS3Client(builder);
     }
 
     /**
-     * should return a new AmazonS3
+     * should return a new S3Client
      *
      * @param credentialsProvider     AWSCredentialsProvider mandatory
      * @param clientConfiguration     ClientConfiguration mandatory
      * @param requestMetricsCollector RequestMetricCollector mandatory
-     * @return {@link com.amazonaws.services.s3.AmazonS3}
+     * @return {@link software.amazon.awssdk.services.s3.AmazonS3}
      */
-    protected abstract AmazonS3 createAmazonS3(AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfiguration, RequestMetricCollector requestMetricsCollector);
+    protected abstract S3Client createS3Client(S3ClientBuilder builder);
 
-    protected AWSCredentialsProvider getCredentialsProvider(Properties props) {
-        AWSCredentialsProvider credentialsProvider;
+    protected AwsCredentialsProvider getCredentialsProvider(Properties props) {
+        AwsCredentialsProvider credentialsProvider;
         if (props.getProperty(ACCESS_KEY) == null && props.getProperty(SECRET_KEY) == null)
-            credentialsProvider = new DefaultAWSCredentialsProviderChain();
+            credentialsProvider = DefaultCredentialsProvider.create();
         else
-            credentialsProvider = new AWSStaticCredentialsProvider(getAWSCredentials(props));
+            credentialsProvider = StaticCredentialsProvider.create(getAWSCredentials(props));
         return credentialsProvider;
     }
 
-    protected RequestMetricCollector getRequestMetricsCollector(Properties props) {
-        RequestMetricCollector requestMetricCollector = null;
-        if (props.containsKey(REQUEST_METRIC_COLLECTOR_CLASS)) {
-            try {
-                requestMetricCollector = (RequestMetricCollector) Class.forName(props.getProperty(REQUEST_METRIC_COLLECTOR_CLASS)).newInstance();
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("Can't instantiate REQUEST_METRIC_COLLECTOR_CLASS " + props.getProperty(REQUEST_METRIC_COLLECTOR_CLASS), t);
-            }
-        }
-        return requestMetricCollector;
+    protected AwsCredentials getAWSCredentials(Properties props) {
+        return AwsCredentials.create(props.getProperty(ACCESS_KEY), props.getProperty(SECRET_KEY));
     }
 
-    protected S3ClientOptions getClientOptions(Properties props) {
-        S3ClientOptions.Builder builder = S3ClientOptions.builder();
-        if (props.getProperty(PATH_STYLE_ACCESS) != null &&
-                Boolean.parseBoolean(props.getProperty(PATH_STYLE_ACCESS)))
-            builder.setPathStyleAccess(true);
-
-        return builder.build();
+    protected ClientHttpConfiguration getHttpConfiguration(Properties props) {
+        // TODO: custom http configuration based on properties
+        return ClientHttpConfiguration.builder().build();
     }
 
-    protected ClientConfiguration getClientConfiguration(Properties props) {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        if (props.getProperty(CONNECTION_TIMEOUT) != null)
-            clientConfiguration.setConnectionTimeout(Integer.parseInt(props.getProperty(CONNECTION_TIMEOUT)));
-        if (props.getProperty(MAX_CONNECTIONS) != null)
-            clientConfiguration.setMaxConnections(Integer.parseInt(props.getProperty(MAX_CONNECTIONS)));
-        if (props.getProperty(MAX_ERROR_RETRY) != null)
-            clientConfiguration.setMaxErrorRetry(Integer.parseInt(props.getProperty(MAX_ERROR_RETRY)));
-        if (props.getProperty(PROTOCOL) != null)
-            clientConfiguration.setProtocol(Protocol.valueOf(props.getProperty(PROTOCOL)));
-        if (props.getProperty(PROXY_DOMAIN) != null)
-            clientConfiguration.setProxyDomain(props.getProperty(PROXY_DOMAIN));
-        if (props.getProperty(PROXY_HOST) != null)
-            clientConfiguration.setProxyHost(props.getProperty(PROXY_HOST));
-        if (props.getProperty(PROXY_PASSWORD) != null)
-            clientConfiguration.setProxyPassword(props.getProperty(PROXY_PASSWORD));
-        if (props.getProperty(PROXY_PORT) != null)
-            clientConfiguration.setProxyPort(Integer.parseInt(props.getProperty(PROXY_PORT)));
-        if (props.getProperty(PROXY_USERNAME) != null)
-            clientConfiguration.setProxyUsername(props.getProperty(PROXY_USERNAME));
-        if (props.getProperty(PROXY_WORKSTATION) != null)
-            clientConfiguration.setProxyWorkstation(props.getProperty(PROXY_WORKSTATION));
-        int socketSendBufferSizeHint = 0;
-        if (props.getProperty(SOCKET_SEND_BUFFER_SIZE_HINT) != null)
-            socketSendBufferSizeHint = Integer.parseInt(props.getProperty(SOCKET_SEND_BUFFER_SIZE_HINT));
-        int socketReceiveBufferSizeHint = 0;
-        if (props.getProperty(SOCKET_RECEIVE_BUFFER_SIZE_HINT) != null)
-            socketReceiveBufferSizeHint = Integer.parseInt(props.getProperty(SOCKET_RECEIVE_BUFFER_SIZE_HINT));
-        clientConfiguration.setSocketBufferSizeHints(socketSendBufferSizeHint, socketReceiveBufferSizeHint);
-        if (props.getProperty(SOCKET_TIMEOUT) != null)
-            clientConfiguration.setSocketTimeout(Integer.parseInt(props.getProperty(SOCKET_TIMEOUT)));
-        if (props.getProperty(USER_AGENT) != null)
-            clientConfiguration.setUserAgentPrefix(props.getProperty(USER_AGENT));
-        if (props.getProperty(SIGNER_OVERRIDE) != null)
-            clientConfiguration.setSignerOverride(props.getProperty(SIGNER_OVERRIDE));
-        return clientConfiguration;
+    protected S3AdvancedConfiguration getAdvancedConfiguration(Properties props) {
+        // TODO: custom configuration based on properties
+        return S3AdvancedConfiguration.builder().build();
     }
 
-    protected BasicAWSCredentials getAWSCredentials(Properties props) {
-        return new BasicAWSCredentials(props.getProperty(ACCESS_KEY), props.getProperty(SECRET_KEY));
+    protected ClientOverrideConfiguration getOverrideConfiguration(Properties props) {
+        // TODO: custom configuration based on properties
+        return ClientOverrideConfiguration.builder().build();
     }
 }

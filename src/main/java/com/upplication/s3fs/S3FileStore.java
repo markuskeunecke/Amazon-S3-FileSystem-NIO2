@@ -4,10 +4,15 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
+import java.util.Date;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.Owner;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.GetBucketAclRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListBucketsRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.Owner;
 import com.google.common.collect.ImmutableList;
 
 public class S3FileStore extends FileStore implements Comparable<S3FileStore> {
@@ -65,9 +70,10 @@ public class S3FileStore extends FileStore implements Comparable<S3FileStore> {
     public <V extends FileStoreAttributeView> V getFileStoreAttributeView(Class<V> type) {
         if (type != S3FileStoreAttributeView.class)
             throw new IllegalArgumentException("FileStoreAttributeView of type '" + type.getName() + "' is not supported.");
-        Bucket buck = getBucket();
-        Owner owner = buck.getOwner();
-        return (V) new S3FileStoreAttributeView(buck.getCreationDate(), buck.getName(), owner.getId(), owner.getDisplayName());
+        // TODO: bucket can come back as null here...
+        Bucket buck = getBucket(name);
+        Owner owner = getClient().getBucketAcl(GetBucketAclRequest.builder().bucket(name).build()).owner();
+        return (V) new S3FileStoreAttributeView(Date.from(buck.creationDate()), buck.name(), owner.id(), owner.displayName());
     }
 
     @Override
@@ -84,25 +90,51 @@ public class S3FileStore extends FileStore implements Comparable<S3FileStore> {
     }
 
     private Bucket getBucket(String bucketName) {
-        for (Bucket buck : getClient().listBuckets())
-            if (buck.getName().equals(bucketName))
+        for (Bucket buck : getClient().listBuckets().buckets())
+            if (buck.name().equals(bucketName))
                 return buck;
         return null;
+    }
+
+    private boolean hasBucket(String bucketName) {
+        // Originally getBucket was being used to determine presence of a bucket
+        //
+        // This is incorrect for two reasons:
+        // 1. The list bucket operation provides buckets for which you are the owner
+        //    It would not, therefore, allow you to work with buckets for which you
+        //    have access but are not the owner.
+        // 2. The way this information is being used later is to determine the
+        //    bucket owner, which by definition, is now "you".
+        // https://docs.aws.amazon.com/AmazonS3/latest/API/RESTServiceGET.html
+        //
+        // However, note that the revised code below now has a different permissions
+        // model as HeadBucket is now required
+        boolean bucket = false;
+        try {
+          getClient().headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+          bucket = true;
+        }catch(NoSuchBucketException nsbe) {}
+        return bucket;
     }
 
     public S3Path getRootDirectory() {
         return new S3Path(fileSystem, "/" + this.name());
     }
 
-    private AmazonS3 getClient() {
+    private S3Client getClient() {
         return fileSystem.getClient();
     }
 
     public Owner getOwner() {
-        Bucket buck = getBucket();
-        if (buck != null)
-            return buck.getOwner();
-        return fileSystem.getClient().getS3AccountOwner();
+        if (hasBucket(name))
+            return getClient().getBucketAcl(GetBucketAclRequest.builder().bucket(name).build()).owner();
+        // SDK v1 getS3AccountOwner uses the list buckets call, then extracts
+        // the owner field (see: https://github.com/aws/aws-sdk-java/blob/4734de6fb0f80fe5768a6587aad3b9d0eaec388f/aws-java-sdk-s3/src/main/java/com/amazonaws/services/s3/model/transform/Unmarshallers.java#L48
+        // and https://github.com/aws/aws-sdk-java/blob/2d15a603a96f98076f5458db49d659f296eab313/aws-java-sdk-s3/src/main/java/com/amazonaws/services/s3/AmazonS3Client.java#L926
+        //
+        // SDK v2 does not have that, as the SDK is mostly auto-generated based on the model files from the service, so much less custom code and helpers
+        // More transparency, but we have to unwind this manually. So, here we go...
+        return getClient().listBuckets(ListBucketsRequest.builder().build()).owner();
     }
 
     @Override

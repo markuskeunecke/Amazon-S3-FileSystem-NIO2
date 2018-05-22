@@ -1,4 +1,4 @@
-package com.upplication.s3fs.util;
+package org.lerch.s3fs.util;
 
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -13,10 +13,10 @@ import software.amazon.awssdk.services.s3.model.Permission;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import com.google.common.collect.Sets;
-import com.upplication.s3fs.attribute.S3BasicFileAttributes;
-import com.upplication.s3fs.S3Path;
-import com.upplication.s3fs.attribute.S3PosixFileAttributes;
-import com.upplication.s3fs.attribute.S3UserPrincipal;
+import org.lerch.s3fs.attribute.S3BasicFileAttributes;
+import org.lerch.s3fs.S3Path;
+import org.lerch.s3fs.attribute.S3PosixFileAttributes;
+import org.lerch.s3fs.attribute.S3UserPrincipal;
 
 import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;

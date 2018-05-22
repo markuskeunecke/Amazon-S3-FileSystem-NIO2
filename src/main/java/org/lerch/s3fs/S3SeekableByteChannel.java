@@ -1,4 +1,4 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
 import static java.lang.String.format;
 

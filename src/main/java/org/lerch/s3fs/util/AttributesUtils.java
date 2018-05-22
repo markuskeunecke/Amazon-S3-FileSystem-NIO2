@@ -1,4 +1,4 @@
-package com.upplication.s3fs.util;
+package org.lerch.s3fs.util;
 
 
 import java.nio.file.attribute.BasicFileAttributes;

@@ -1,4 +1,4 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
 import java.nio.file.attribute.FileStoreAttributeView;
 import java.util.Date;

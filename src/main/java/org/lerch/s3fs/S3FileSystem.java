@@ -1,6 +1,6 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
-import static com.upplication.s3fs.S3Path.PATH_SEPARATOR;
+import static org.lerch.s3fs.S3Path.PATH_SEPARATOR;
 
 import java.io.IOException;
 import java.nio.file.FileStore;

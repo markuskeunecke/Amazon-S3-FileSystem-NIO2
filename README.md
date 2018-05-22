@@ -1,10 +1,12 @@
-An **Amazon AWS S3** FileSystem Provider **JSR-203** for Java 7 (NIO2)
+An **Amazon AWS S3** FileSystem Provider **JSR-203** for Java 8 (NIO2) using the AWS SDK v2.
+
+This is a forked version of [Upplication's S3 FileSystem](https://github.com/upplication/Amazon-S3-FileSystem-NIO2) based on the AWS SDK v2.
 
 Amazon Simple Storage Service provides a fully redundant data storage infrastructure for storing and retrieving any amount of data, at any time.
-NIO2 is the new file management API, introduced in Java version 7. 
+NIO2 is the new file management API, introduced in Java version 7.
 This project provides a first API implementation, little optimized, but "complete" to manage files and folders directly on Amazon S3.
 
-[![Build Status](https://travis-ci.org/Upplication/Amazon-S3-FileSystem-NIO2.svg?branch=master)](https://travis-ci.org/Upplication/Amazon-S3-FileSystem-NIO2/builds) [![Coverage Status](https://coveralls.io/repos/Upplication/Amazon-S3-FileSystem-NIO2/badge.png?branch=master)](https://coveralls.io/r/Upplication/Amazon-S3-FileSystem-NIO2?branch=master) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.upplication/s3fs/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.upplication/s3fs)
+[![Build Status](https://travis-ci.org/Lerch/Amazon-S3-FileSystem-NIO2.svg?branch=sdkv2)](https://travis-ci.org/Lerch/Amazon-S3-FileSystem-NIO2/builds) [![Coverage Status](https://coveralls.io/repos/Lerch/Amazon-S3-FileSystem-NIO2/badge.png?branch=sdkv2)](https://coveralls.io/r/Lerch/Amazon-S3-FileSystem-NIO2?branch=sdkv2) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.lerch/s3fs/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.lerch/s3fs)
 
 #### How to use
 
@@ -12,19 +14,19 @@ This project provides a first API implementation, little optimized, but "complet
 
 ```XML
 <dependency>
-	<groupId>com.upplication</groupId>
-	<artifactId>s3fs</artifactId>
-	<version>2.2.1</version>
+	<groupId>org.lerch</groupId>
+	<artifactId>s3fs-sdk2</artifactId>
+	<version>1.0</version>
 </dependency>
 ```
 
 
-And add to your META-INF/services/java.nio.file.spi.FileSystemProvider (create if not exists yet) a new line like this: com.upplication.s3fs.S3FileSystemProvider.
+And add to your META-INF/services/java.nio.file.spi.FileSystemProvider (create if not exists yet) a new line like this: org.lerch.s3fs.S3FileSystemProvider.
 
 ##### S3FileSystem and AmazonS3 settings
 
 All settings for S3FileSystem and for the underlying AmazonS3 connector library can be set through System properties or environment variables.
-Possible settings can be found in com.upplication.s3fs.AmazonS3Factory.
+Possible settings can be found in org.lerch.s3fs.AmazonS3Factory.
 
 #### Using service locator and system vars
 
@@ -54,8 +56,8 @@ Create a map with the authentication and use the fileSystem to create the fileSy
 
 ```java
 Map<String, ?> env = ImmutableMap.<String, Object> builder()
-				.put(com.upplication.s3fs.AmazonS3Factory.ACCESS_KEY, "access key")
-				.put(com.upplication.s3fs.AmazonS3Factory.SECRET_KEY, "secret key").build()
+				.put(org.lerch.s3fs.AmazonS3Factory.ACCESS_KEY, "access key")
+				.put(org.lerch.s3fs.AmazonS3Factory.SECRET_KEY, "secret key").build()
 FileSystems.newFileSystem("s3:///", env, Thread.currentThread().getContextClassLoader());
 ```
 
@@ -118,17 +120,17 @@ Add to classpath and configure:
 @Configuration
 public class AwsConfig {
 
-    @Value("${upplication.aws.accessKey}")
+    @Value("${lerch.aws.accessKey}")
     private String accessKey;
 
-    @Value("${upplication.aws.secretKey}")
+    @Value("${lerch.aws.secretKey}")
     private String secretKey;
 
     @Bean
     public FileSystem s3FileSystem() throws IOException {
         Map<String, String> env = new HashMap<>();
-        env.put(com.upplication.s3fs.AmazonS3Factory.ACCESS_KEY, accessKey);
-        env.put(com.upplication.s3fs.AmazonS3Factory.SECRET_KEY, secretKey);
+        env.put(org.lerch.s3fs.AmazonS3Factory.ACCESS_KEY, accessKey);
+        env.put(org.lerch.s3fs.AmazonS3Factory.SECRET_KEY, secretKey);
 
         return FileSystems.newFileSystem(URI.create("s3:///"), env, Thread.currentThread().getContextClassLoader());
     }
@@ -142,15 +144,6 @@ Now you can inject in any spring component:
 private FileSystem s3FileSystem;
 ```
 
-##### What is new 2.0.0
-
-* Preserve URI with end slash #76
-* Removed META-INF/services/java.nio.file.spi.FileTypeDetector #78
-* Bucket are filestores and root directories for a bucket is the bucket itself.
-* getFileName for a root Path is ```null```
-* Added new method toURL to S3Path and can be customized with the property s3fs_path_style_access #83
-* Improved S3Path Tests
-
 #### Features:
 
 * Copy and create folders and files
@@ -163,8 +156,7 @@ private FileSystem s3FileSystem;
 
 #### Roadmap:
 
-* Performance issue (slow querys with virtual folders, add multipart submit...)
-* Disallow upload binary files with same name as folders and vice versa
+* Add unit tests (current tests depend on a mock object based on v1)
 
 #### Out of Roadmap:
 
@@ -175,7 +167,7 @@ private FileSystem s3FileSystem;
 Clone the github repository:
 
 ```java
-git clone https://github.com/Upplication/Amazon-S3-FileSystem-NIO2.git
+git clone https://github.com/elerch/Amazon-S3-FileSystem-NIO2.git
 ```
 
 To run the tests:

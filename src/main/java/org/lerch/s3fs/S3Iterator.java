@@ -1,4 +1,4 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.upplication.s3fs.util.S3Utils;
+import org.lerch.s3fs.util.S3Utils;
 
 /**
  * S3 iterator over folders at first level.

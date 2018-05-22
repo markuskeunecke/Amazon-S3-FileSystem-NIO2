@@ -1,4 +1,4 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseInputStream;
@@ -17,13 +17,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.upplication.s3fs.attribute.S3BasicFileAttributeView;
-import com.upplication.s3fs.attribute.S3BasicFileAttributes;
-import com.upplication.s3fs.attribute.S3PosixFileAttributeView;
-import com.upplication.s3fs.attribute.S3PosixFileAttributes;
-import com.upplication.s3fs.util.AttributesUtils;
-import com.upplication.s3fs.util.Cache;
-import com.upplication.s3fs.util.S3Utils;
+import org.lerch.s3fs.attribute.S3BasicFileAttributeView;
+import org.lerch.s3fs.attribute.S3BasicFileAttributes;
+import org.lerch.s3fs.attribute.S3PosixFileAttributeView;
+import org.lerch.s3fs.attribute.S3PosixFileAttributes;
+import org.lerch.s3fs.util.AttributesUtils;
+import org.lerch.s3fs.util.Cache;
+import org.lerch.s3fs.util.S3Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.collect.Sets.difference;
-import static com.upplication.s3fs.AmazonS3Factory.*;
+import static org.lerch.s3fs.AmazonS3Factory.*;
 import static java.lang.String.format;
 
 /**

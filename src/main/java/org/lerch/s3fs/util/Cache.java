@@ -1,6 +1,6 @@
-package com.upplication.s3fs.util;
+package org.lerch.s3fs.util;
 
-import com.upplication.s3fs.attribute.S3BasicFileAttributes;
+import org.lerch.s3fs.attribute.S3BasicFileAttributes;
 
 public class Cache {
 

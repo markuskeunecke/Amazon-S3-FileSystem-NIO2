@@ -1,4 +1,4 @@
-package com.upplication.s3fs.attribute;
+package org.lerch.s3fs.attribute;
 
 import java.nio.file.attribute.UserPrincipal;
 

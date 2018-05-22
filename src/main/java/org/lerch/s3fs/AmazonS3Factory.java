@@ -1,4 +1,4 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
 import software.amazon.awssdk.core.auth.AwsCredentialsProvider;
 import software.amazon.awssdk.core.auth.StaticCredentialsProvider;

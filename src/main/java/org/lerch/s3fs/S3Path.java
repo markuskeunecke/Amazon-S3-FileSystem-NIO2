@@ -1,9 +1,9 @@
-package com.upplication.s3fs;
+package org.lerch.s3fs;
 
 import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.upplication.s3fs.attribute.S3BasicFileAttributes;
+import org.lerch.s3fs.attribute.S3BasicFileAttributes;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class S3Path implements Path {
 
         Preconditions.checkArgument(first != null, "first path must be not null");
         Preconditions.checkArgument(!first.startsWith("//"), "first path doesnt start with '//'. Miss bucket");
-        // see tests com.upplication.s3fs.Path.EndsWithTest#endsWithRelativeBlankAbsolute()
+        // see tests org.lerch.s3fs.Path.EndsWithTest#endsWithRelativeBlankAbsolute()
         // Preconditions.checkArgument(!first.isEmpty(), "first path must be not empty");
 
         boolean hasBucket = first.startsWith("/");

@@ -1,6 +1,6 @@
-package com.upplication.s3fs.attribute;
+package org.lerch.s3fs.attribute;
 
-import com.upplication.s3fs.S3Path;
+import org.lerch.s3fs.S3Path;
 
 import java.io.IOException;
 import java.nio.file.attribute.*;

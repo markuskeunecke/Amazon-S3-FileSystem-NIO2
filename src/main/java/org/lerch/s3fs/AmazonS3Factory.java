@@ -1,7 +1,12 @@
 package org.lerch.s3fs;
 
+/*
+ I initially tried to go through the maven repo to find the updated libraries for the 
+ awssdk.  When I still ran into errors I tried importing * everything,  which also didn't work. 
+ */
 import software.amazon.awssdk.core.*;
 import software.amazon.awssdk.services.*;
+
 // import software.amazon.awssdk.core.auth.AwsCredentialsProvider;
 // import software.amazon.awssdk.core.auth.StaticCredentialsProvider;
 // import software.amazon.awssdk.core.auth.AwsCredentials;

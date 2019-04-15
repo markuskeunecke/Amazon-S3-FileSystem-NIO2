@@ -1,14 +1,16 @@
 package org.lerch.s3fs;
 
-import software.amazon.awssdk.core.auth.AwsCredentialsProvider;
-import software.amazon.awssdk.core.auth.StaticCredentialsProvider;
-import software.amazon.awssdk.core.auth.AwsCredentials;
-import software.amazon.awssdk.core.auth.DefaultCredentialsProvider;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
-import software.amazon.awssdk.services.s3.S3AdvancedConfiguration;
-import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration;
-import software.amazon.awssdk.core.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.*;
+import software.amazon.awssdk.services.*;
+// import software.amazon.awssdk.core.auth.AwsCredentialsProvider;
+// import software.amazon.awssdk.core.auth.StaticCredentialsProvider;
+// import software.amazon.awssdk.core.auth.AwsCredentials;
+// import software.amazon.awssdk.core.auth.DefaultCredentialsProvider;
+// import software.amazon.awssdk.services.s3.S3Client;
+// import software.amazon.awssdk.services.s3.S3ClientBuilder;
+// import software.amazon.awssdk.services.s3.S3AdvancedConfiguration;
+// import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration;
+// import software.amazon.awssdk.core.config.ClientOverrideConfiguration;
 
 import java.net.URI;
 import java.util.Properties;

@@ -1,7 +1,7 @@
 package org.lerch.s3fs;
 
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.core.sync.ResponseInputStream;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
@@ -388,7 +388,7 @@ public class S3FileSystemProvider extends FileSystemProvider {
         builder.bucket(bucketName)
                .key(directoryKey)
                .contentLength(0L);
-        s3Path.getFileSystem().getClient().putObject(builder.build(), RequestBody.of(new byte[0]));
+        s3Path.getFileSystem().getClient().putObject(builder.build(), RequestBody.fromBytes(new byte[0]));
     }
 
     @Override

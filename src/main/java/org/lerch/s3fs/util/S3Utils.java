@@ -54,7 +54,7 @@ public class S3Utils {
                 .eTag(metadata.eTag())
                 .owner(acl.owner())
                 .size(metadata.contentLength())
-                .storageClass(metadata.storageClassString());
+                .storageClass(metadata.storageClassAsString());
 
             return builder.build();
         } catch (S3Exception e) {

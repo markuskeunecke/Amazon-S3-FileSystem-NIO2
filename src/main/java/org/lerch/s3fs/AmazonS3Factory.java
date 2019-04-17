@@ -1,14 +1,21 @@
 package org.lerch.s3fs;
 
-import software.amazon.awssdk.core.auth.AwsCredentialsProvider;
-import software.amazon.awssdk.core.auth.StaticCredentialsProvider;
-import software.amazon.awssdk.core.auth.AwsCredentials;
-import software.amazon.awssdk.core.auth.DefaultCredentialsProvider;
+/*
+ I initially tried to go through the maven repo to find the updated libraries for the 
+ awssdk.  When I still ran into errors I tried importing * everything,  which also didn't work. 
+ */
+ 
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
-import software.amazon.awssdk.services.s3.S3AdvancedConfiguration;
-import software.amazon.awssdk.core.client.builder.ClientHttpConfiguration;
-import software.amazon.awssdk.core.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 
 import java.net.URI;
 import java.util.Properties;
@@ -51,8 +58,8 @@ public abstract class AmazonS3Factory {
             builder.endpointOverride(uri);
 
         builder.credentialsProvider(getCredentialsProvider(props))
-               .httpConfiguration(getHttpConfiguration(props))
-               .advancedConfiguration(getAdvancedConfiguration(props))
+               .httpClient(getHttpClient(props))
+               .serviceConfiguration(getServiceConfiguration(props))
                .overrideConfiguration(getOverrideConfiguration(props));
                //.region(getRegion(props));
 
@@ -79,17 +86,17 @@ public abstract class AmazonS3Factory {
     }
 
     protected AwsCredentials getAWSCredentials(Properties props) {
-        return AwsCredentials.create(props.getProperty(ACCESS_KEY), props.getProperty(SECRET_KEY));
+        return AwsBasicCredentials.create(props.getProperty(ACCESS_KEY), props.getProperty(SECRET_KEY));
     }
 
-    protected ClientHttpConfiguration getHttpConfiguration(Properties props) {
+    protected SdkHttpClient getHttpClient(Properties props) {
         // TODO: custom http configuration based on properties
-        return ClientHttpConfiguration.builder().build();
+        return UrlConnectionHttpClient.builder().build();
     }
 
-    protected S3AdvancedConfiguration getAdvancedConfiguration(Properties props) {
+    protected S3Configuration getServiceConfiguration(Properties props) {
         // TODO: custom configuration based on properties
-        return S3AdvancedConfiguration.builder().build();
+        return S3Configuration.builder().build();
     }
 
     protected ClientOverrideConfiguration getOverrideConfiguration(Properties props) {

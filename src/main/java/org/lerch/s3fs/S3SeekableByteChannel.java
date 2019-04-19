@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-public class S3SeekableByteChannel implements SeekableByteChannel {
+public class S3SeekableByteChannel implements SeekableByteChannel, S3Channel {
 
     private S3Path path;
     private Set<? extends OpenOption> options;
@@ -48,7 +48,7 @@ public class S3SeekableByteChannel implements SeekableByteChannel {
                 !this.options.contains(StandardOpenOption.CREATE))
             throw new NoSuchFileException(format("target not exists: %s", path));
 
-        tempFile = Files.createTempFile("temp-s3-", key.replaceAll("/", "_"));
+        tempFile = createTempFile(path);
         boolean removeTempFile = true;
         try {
             if (exists) {

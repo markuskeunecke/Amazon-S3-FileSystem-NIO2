@@ -15,7 +15,7 @@ env:
   - secure: tlMPSRwLNtMX6sAPle28uItIUoWuWet2EDaWZprKPJsY5u/AmjOigDH6dJCwYFi7t1eWeueYeNgzQjKiVGe1kia00WoEaUwPo+P3C1hCjkKSfjLwMxqLR4VvEj/8FDRBoncwryNWWCCxSxEXL6OCGCUqCqy0eye2KaEV9RJCNoA=
   - secure: bXjOngFzBAcI5uiJyxAx2S9rptFK+Sp0Pa0LQKsPz/lFxCPhgJdhHGqEvpkzxAi41jmR/nTFB/F//a7lWUK3QfHQV9zU39T+nA17wjmpds2+1xYNTAea5ow3bBVelBL0MoIs+sNlwQhIFR7daVpTfnVEJNXCipEzJmLrKptWs7E=
 before_install:
-- sudo sed -i 's/security.provider.9/#security.provider.9/g' $JAVA_HOME/jre/lib/security/java.security
+- 'sudo sed -i "s/security.provider.9/#security.provider.9/g" "$JAVA_HOME/jre/lib/security/java.security" || true # yolo'
 before_script:
 - chmod a+x ./print_surefire_reports.sh
 script: mvn clean install

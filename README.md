@@ -8,7 +8,7 @@ This project provides a first API implementation, little optimized, but "complet
 
 [![Build Status](https://travis-ci.org/elerch/Amazon-S3-FileSystem-NIO2.svg?branch=sdkv2)](https://travis-ci.org/elerch/Amazon-S3-FileSystem-NIO2/builds) [![Coverage Status](https://coveralls.io/repos/elerch/Amazon-S3-FileSystem-NIO2/badge.png?branch=sdkv2)](https://coveralls.io/r/elerch/Amazon-S3-FileSystem-NIO2?branch=sdkv2) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.lerch/s3fs/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.lerch/s3fs)
 
-#### How to use
+#### How to use
 
 ##### Download from Maven Central
 
@@ -28,7 +28,7 @@ And add to your META-INF/services/java.nio.file.spi.FileSystemProvider (create i
 All settings for S3FileSystem and for the underlying AmazonS3 connector library can be set through System properties or environment variables.
 Possible settings can be found in org.lerch.s3fs.AmazonS3Factory.
 
-#### Using service locator and system vars
+#### Using service locator and system vars
 
 Check that s3fs_access_key and s3fs_secret_key system vars are present with the correct values to have full access to your amazon s3 bucket.
 
@@ -144,7 +144,7 @@ Now you can inject in any spring component:
 private FileSystem s3FileSystem;
 ```
 
-#### Features:
+#### Features:
 
 * Copy and create folders and files
 * Delete folders and files
@@ -158,7 +158,7 @@ private FileSystem s3FileSystem;
 
 * Add unit tests (current tests depend on a mock object based on v1)
 
-#### Out of Roadmap:
+#### Out of Roadmap:
 
 * Watchers
 
@@ -183,6 +183,6 @@ s3fs_access_key=your access key for test
 
 Thats all, now you can run the test with the command: `mvn test` or `mvn integration-test -Pintegration-tests`
 
-#### LICENSE:
+#### LICENSE:
 
 Amazon S3 FileSystem NIO2 is released under the MIT License.

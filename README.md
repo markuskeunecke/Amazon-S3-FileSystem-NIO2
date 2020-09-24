@@ -15,7 +15,7 @@ This project provides a first API implementation, little optimized, but "complet
 ```XML
 <dependency>
 	<groupId>org.lerch</groupId>
-	<artifactId>s3fs-sdk2</artifactId>
+	<artifactId>s3fs</artifactId>
 	<version>1.0</version>
 </dependency>
 ```
